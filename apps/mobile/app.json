@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "LAYR",
+    "slug": "layr",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f0f1a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.layr.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "LAYR yakınındaki katmanları göstermek için konumuna ihtiyaç duyar.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "LAYR arka planda çalışırken yakındaki özel konumlar için bildirim göndermek üzere konumuna ihtiyaç duyar.",
+        "NSCameraUsageDescription": "LAYR gerçek dünyanın üzerine dijital katmanlar göstermek için kameraya ihtiyaç duyar.",
+        "NSMicrophoneUsageDescription": "LAYR sesli hikaye kaydetmek için mikrofona ihtiyaç duyar.",
+        "NSPhotoLibraryUsageDescription": "LAYR fotoğraf ve video yüklemek için fotoğraf kütüphanesine ihtiyaç duyar."
+      }
+    },
+    "android": {
+      "package": "app.layr.mobile",
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-location",
+      "expo-camera",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LAYR fotoğraf yüklemek için fotoğraflarına erişmek istiyor.",
+          "cameraPermission": "LAYR fotoğraf çekmek için kameraya erişmek istiyor."
+        }
+      ]
+    ],
+    "scheme": "layr",
+    "extra": {
+      "eas": {
+        "projectId": "layr-project-id"
+      }
+    }
+  }
+}

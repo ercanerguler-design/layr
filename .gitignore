@@ -1,0 +1,74 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+.expo/
+out/
+
+# Turbo
+.turbo/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+packages/db/src/generated/
+
+# TypeScript
+*.tsbuildinfo
+
+# Debug
+*.pid
+*.seed
+*.pid.lock
+# DB files
+dev.db
+*.db
+*.db-journal
+
+# Secrets
+.env
+.env.local
+
+# Build outputs  
+node_modules/
+.next/
+dist/
+.turbo/
+.expo/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+  # ─── PostgreSQL + PostGIS ───────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: layr_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: layr
+      POSTGRES_PASSWORD: layr_password
+      POSTGRES_DB: layr_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U layr -d layr_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ─────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: layr_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ""
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── MinIO (S3-compatible object storage) ──────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: layr_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # ─── MinIO bucket setup ─────────────────────────────────────
+  minio-setup:
+    image: minio/mc:latest
+    container_name: layr_minio_setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/layr-media;
+      mc anonymous set download local/layr-media;
+      echo 'MinIO bucket ready.';
+      "
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

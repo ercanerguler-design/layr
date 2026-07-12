@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --layr-primary: #7c3aed;
+  --layr-primary-light: #8b5cf6;
+  --layr-accent: #f59e0b;
+  --layr-accent2: #06b6d4;
+  --layr-dark: #08080f;
+  --layr-surface: #111127;
+  --layr-border: rgba(139, 92, 246, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--layr-dark);
+  color: white;
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(139, 92, 246, 0.07);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(139, 92, 246, 0.18);
+  }
+
+  .glass-dark {
+    background: rgba(8, 8, 15, 0.92);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-warm {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: white;
+    border-radius: 14px;
+    padding: 12px 24px;
+    font-weight: 700;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 28px rgba(124, 58, 237, 0.55);
+  }
+
+  .card {
+    background: rgba(17, 17, 39, 0.9);
+    border: 1px solid rgba(139, 92, 246, 0.12);
+    border-radius: 20px;
+  }
+}
+
+/* Mapbox/Leaflet overrides */
+.mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-attrib {
+  display: none !important;
+}
+.leaflet-bottom.leaflet-right {
+  display: none;
+}
