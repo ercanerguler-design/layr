@@ -124,6 +124,126 @@ export default function LayerDetailPage() {
           </p>
         </div>
 
+        {/* Medya — Ses, Fotoğraf, 3D Model */}
+        {layer.media && layer.media.length > 0 && (
+          <div className="space-y-3">
+            {layer.media.map(
+              (m: {
+                id: string;
+                type: string;
+                url: string;
+                mimeType: string;
+                duration?: number | null;
+              }) => {
+                const mediaUrl = m.url.startsWith("http")
+                  ? m.url
+                  : `http://localhost:3001${m.url}`;
+
+                if (m.type === "AUDIO") {
+                  return (
+                    <div
+                      key={m.id}
+                      className="bg-white/5 rounded-2xl p-4 border border-white/8"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">🎙️</span>
+                        <div>
+                          <div className="text-sm font-semibold">Ses Kaydı</div>
+                          {m.duration && (
+                            <div className="text-xs text-white/40">
+                              {Math.floor(m.duration / 60)}:
+                              {String(m.duration % 60).padStart(2, "0")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <audio
+                        controls
+                        src={mediaUrl}
+                        className="w-full h-10"
+                        style={{ filter: "invert(1)" }}
+                      />
+                    </div>
+                  );
+                }
+
+                if (m.type === "IMAGE") {
+                  return (
+                    <div
+                      key={m.id}
+                      className="rounded-2xl overflow-hidden border border-white/8"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={mediaUrl}
+                        alt="Fotoğraf"
+                        className="w-full max-h-80 object-cover"
+                      />
+                    </div>
+                  );
+                }
+
+                if (m.type === "VIDEO") {
+                  return (
+                    <div
+                      key={m.id}
+                      className="rounded-2xl overflow-hidden border border-white/8"
+                    >
+                      <video
+                        controls
+                        src={mediaUrl}
+                        className="w-full max-h-80"
+                      />
+                    </div>
+                  );
+                }
+
+                if (m.type === "MODEL_3D") {
+                  return (
+                    <div
+                      key={m.id}
+                      className="rounded-2xl overflow-hidden border border-cyan-500/20 bg-[#0a0a1a]"
+                    >
+                      <div className="p-3 flex items-center gap-2 border-b border-white/5">
+                        <span className="text-lg">🧊</span>
+                        <span className="text-xs text-cyan-400 font-semibold">
+                          3D Model — AR ile görüntüleyebilirsin
+                        </span>
+                      </div>
+                      <div
+                        id={`model-${m.id}`}
+                        className="h-72 w-full"
+                        data-src={mediaUrl}
+                      />
+                      <script
+                        dangerouslySetInnerHTML={{
+                          __html: `
+                          import('https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js').then(()=>{
+                            const el = document.getElementById('model-${m.id}');
+                            if(el && !el.querySelector('model-viewer')){
+                              const mv = document.createElement('model-viewer');
+                              mv.setAttribute('src','${mediaUrl}');
+                              mv.setAttribute('alt','3D Model');
+                              mv.setAttribute('ar','');
+                              mv.setAttribute('auto-rotate','');
+                              mv.setAttribute('camera-controls','');
+                              mv.style.cssText='width:100%;height:100%;';
+                              el.appendChild(mv);
+                            }
+                          });
+                        `,
+                        }}
+                      />
+                    </div>
+                  );
+                }
+
+                return null;
+              },
+            )}
+          </div>
+        )}
+
         {/* Konum */}
         <button
           onClick={() => router.push(`/location/${layer.location.id}`)}
@@ -184,10 +304,20 @@ export default function LayerDetailPage() {
               <User size={18} className="text-white/50" />
             </div>
             <div>
-              <div className="text-sm font-semibold flex items-center gap-1">
+              <div className="text-sm font-semibold flex items-center gap-1.5">
                 {layer.user.displayName}
                 {layer.user.isVerified && (
-                  <span className="text-indigo-400 text-xs">✓</span>
+                  <span
+                    className="text-blue-400 text-xs"
+                    title="Doğrulanmış hesap"
+                  >
+                    ✓
+                  </span>
+                )}
+                {layer.user.isPremium && (
+                  <span className="text-amber-400 text-xs" title="Premium üye">
+                    👑
+                  </span>
                 )}
               </div>
               <div className="text-xs text-white/40">

@@ -6,6 +6,7 @@ import { userRoutes } from "./users.js";
 import { mediaRoutes } from "./media.js";
 import { aiRoutes } from "./ai.js";
 import { adminRoutes } from "./admin.js";
+import { agentRoutes } from "./agents.js";
 
 export async function registerRoutes(app: FastifyInstance) {
   await app.register(authRoutes, { prefix: "/api/auth" });
@@ -15,4 +16,5 @@ export async function registerRoutes(app: FastifyInstance) {
   await app.register(mediaRoutes, { prefix: "/api/media" });
   await app.register(aiRoutes, { prefix: "/api/ai" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
+  await app.register(agentRoutes, { prefix: "/api/agents" });
 }

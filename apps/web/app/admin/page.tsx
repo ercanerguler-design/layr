@@ -13,6 +13,8 @@ import {
   LogOut,
   Eye,
   Clock,
+  Crown,
+  ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -242,10 +244,18 @@ export default function AdminPage() {
 
           {/* Son kullanıcılar */}
           <div className="bg-white/5 border border-white/8 rounded-2xl p-5">
-            <h2 className="text-sm font-bold mb-4 flex items-center gap-2">
-              <Users size={16} className="text-green-400" />
-              Son Kayıt Olan Kullanıcılar
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold flex items-center gap-2">
+                <Users size={16} className="text-green-400" />
+                Son Kayıt Olan Kullanıcılar
+              </h2>
+              <button
+                onClick={() => router.push("/admin/users")}
+                className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-600/10 px-3 py-1.5 rounded-full"
+              >
+                <Crown size={11} /> Tümünü Yönet <ChevronRight size={12} />
+              </button>
+            </div>
             <div className="space-y-2">
               {stats.recentUsers.map((user) => (
                 <div

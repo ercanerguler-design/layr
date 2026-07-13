@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { apiClient } from "@/lib/api";
+import { AgentChat } from "@/components/AgentChat";
 import {
   MapPin,
   ArrowLeft,
@@ -15,6 +16,7 @@ import {
   User,
   Tag,
   History,
+  Bot,
 } from "lucide-react";
 
 const COLORS: Record<string, string> = {
@@ -61,6 +63,7 @@ export default function LocationDetailPage() {
   const [activeTab, setActiveTab] = useState<
     "all" | "history" | "memory" | "review"
   >("all");
+  const [agentChatOpen, setAgentChatOpen] = useState(false);
 
   // Konum detayı
   const { data: locData } = useQuery({
@@ -68,6 +71,21 @@ export default function LocationDetailPage() {
     queryFn: () => apiClient.get(`/api/locations/${id}`),
     enabled: !!id,
   });
+
+  // AI Ajan
+  const { data: agentData } = useQuery({
+    queryKey: ["agent", id],
+    queryFn: () =>
+      apiClient
+        .get(`/api/agents/${id}`)
+        .then((r) => r.data.data)
+        .catch(() => null),
+    enabled: !!id,
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const agent = agentData ?? null;
 
   // Tüm katmanlar
   const { data: layersData } = useQuery({
@@ -181,6 +199,61 @@ export default function LocationDetailPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* AI Ajan Butonu */}
+        {agent && (
+          <button
+            onClick={() => setAgentChatOpen(true)}
+            className="w-full flex items-center gap-4 rounded-2xl p-4 border-2 transition-all hover:scale-[1.01] active:scale-[0.99]"
+            style={{
+              background: `linear-gradient(135deg, ${agent.avatarColor}18, ${agent.avatarColor}08)`,
+              borderColor: agent.avatarColor + "44",
+            }}
+          >
+            {/* Avatar */}
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 border-2"
+              style={{
+                backgroundColor: agent.avatarColor + "22",
+                borderColor: agent.avatarColor,
+              }}
+            >
+              {agent.avatarEmoji}
+            </div>
+
+            <div className="flex-1 text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-base">{agent.name}</span>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: agent.avatarColor + "22",
+                    color: agent.avatarColor,
+                  }}
+                >
+                  AI
+                </span>
+              </div>
+              {agent.title && (
+                <p
+                  className="text-xs mt-0.5"
+                  style={{ color: agent.avatarColor + "cc" }}
+                >
+                  {agent.title}
+                </p>
+              )}
+              <p className="text-xs text-white/40 mt-1">
+                Dokunun — {agent.name} ile konuşun 🎙️
+              </p>
+            </div>
+
+            <Bot
+              size={22}
+              style={{ color: agent.avatarColor }}
+              className="flex-shrink-0"
+            />
+          </button>
         )}
 
         {/* ⏱ Zaman Yolculuğu */}
@@ -395,6 +468,15 @@ export default function LocationDetailPage() {
           </div>
         )}
       </div>
+
+      {/* AI Ajan Chat Modal */}
+      {agentChatOpen && agent && (
+        <AgentChat
+          locationId={id}
+          agent={agent}
+          onClose={() => setAgentChatOpen(false)}
+        />
+      )}
     </div>
   );
 }

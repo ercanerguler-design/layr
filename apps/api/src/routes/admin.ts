@@ -145,4 +145,102 @@ export async function adminRoutes(app: FastifyInstance) {
       return reply.send({ success: true, data: user });
     },
   );
+
+  // PATCH /api/admin/users/:id/premium — Premium / Verified toggle
+  app.patch(
+    "/users/:id/premium",
+    { preHandler: requireAdmin },
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Body: { isPremium?: boolean; isVerified?: boolean };
+      }>,
+      reply,
+    ) => {
+      const { isPremium, isVerified } = request.body;
+      const data: Record<string, boolean> = {};
+      if (isPremium !== undefined) data["isPremium"] = isPremium;
+      if (isVerified !== undefined) data["isVerified"] = isVerified;
+
+      const user = await prisma.user.update({
+        where: { id: request.params.id },
+        data,
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          isPremium: true,
+          isVerified: true,
+          role: true,
+        },
+      });
+      return reply.send({ success: true, data: user });
+    },
+  );
+
+  // GET /api/admin/users — Tüm kullanıcılar (yönetim için)
+  app.get(
+    "/users",
+    { preHandler: requireAdmin },
+    async (
+      request: FastifyRequest<{ Querystring: { page?: number; q?: string } }>,
+      reply,
+    ) => {
+      const page = Number(request.query.page ?? 1);
+      const q = request.query.q ?? "";
+      const take = 20;
+
+      const where = q
+        ? {
+            OR: [
+              { username: { contains: q } },
+              { email: { contains: q } },
+              { displayName: { contains: q } },
+            ],
+          }
+        : {};
+
+      const [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          take,
+          skip: (page - 1) * take,
+          select: {
+            id: true,
+            email: true,
+            username: true,
+            displayName: true,
+            role: true,
+            isPremium: true,
+            isVerified: true,
+            createdAt: true,
+            lastActiveAt: true,
+            _count: { select: { layers: true } },
+          },
+        }),
+        prisma.user.count({ where }),
+      ]);
+
+      return reply.send({
+        success: true,
+        data: {
+          users: users.map((u) => ({ ...u, layerCount: u._count.layers })),
+          total,
+          page,
+          pages: Math.ceil(total / take),
+        },
+      });
+    },
+  );
+
+  // DELETE /api/admin/users/:id — Kullanıcı sil
+  app.delete(
+    "/users/:id",
+    { preHandler: requireAdmin },
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      await prisma.user.delete({ where: { id: request.params.id } });
+      return reply.send({ success: true });
+    },
+  );
 }

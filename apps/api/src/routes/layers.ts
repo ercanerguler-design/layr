@@ -6,6 +6,7 @@ import { authenticate } from "../middleware/authenticate.js";
 const nearbySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
+  // Premium: 10km, Free: 3km
   radius: z.coerce.number().min(50).max(10000).default(500),
   type: z.string().optional(),
   year: z.coerce.number().optional(),
@@ -18,8 +19,15 @@ const createLayerSchema = z.object({
   title: z.string().max(120).optional(),
   content: z.string().min(1).max(5000),
   type: z.enum([
-    "TEXT", "PHOTO", "VIDEO", "AUDIO",
-    "AR_OBJECT", "MEMORY", "HISTORICAL", "REVIEW", "EVENT",
+    "TEXT",
+    "PHOTO",
+    "VIDEO",
+    "AUDIO",
+    "AR_OBJECT",
+    "MEMORY",
+    "HISTORICAL",
+    "REVIEW",
+    "EVENT",
   ]),
   year: z.number().int().min(0).max(new Date().getFullYear()).optional(),
   isPublic: z.boolean().default(true),
@@ -56,7 +64,7 @@ export async function layerRoutes(app: FastifyInstance) {
       const query = nearbySchema.parse(request.query);
       const result = await layerService.getNearby(query);
       return reply.send({ success: true, data: result });
-    }
+    },
   );
 
   // GET /api/layers/:id
@@ -70,13 +78,16 @@ export async function layerRoutes(app: FastifyInstance) {
     },
     async (
       request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
+      reply: FastifyReply,
     ) => {
       const { id } = request.params;
       const layer = await layerService.getById(id);
-      if (!layer) return reply.status(404).send({ success: false, error: "Layer not found" });
+      if (!layer)
+        return reply
+          .status(404)
+          .send({ success: false, error: "Layer not found" });
       return reply.send({ success: true, data: layer });
-    }
+    },
   );
 
   // POST /api/layers — requires auth
@@ -94,7 +105,7 @@ export async function layerRoutes(app: FastifyInstance) {
       const body = createLayerSchema.parse(request.body);
       const layer = await layerService.create(request.user.id, body);
       return reply.status(201).send({ success: true, data: layer });
-    }
+    },
   );
 
   // PATCH /api/layers/:id
@@ -110,13 +121,13 @@ export async function layerRoutes(app: FastifyInstance) {
     },
     async (
       request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
+      reply: FastifyReply,
     ) => {
       const { id } = request.params;
       const body = createLayerSchema.partial().parse(request.body);
       const layer = await layerService.update(id, request.user.id, body);
       return reply.send({ success: true, data: layer });
-    }
+    },
   );
 
   // DELETE /api/layers/:id
@@ -132,12 +143,12 @@ export async function layerRoutes(app: FastifyInstance) {
     },
     async (
       request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
+      reply: FastifyReply,
     ) => {
       const { id } = request.params;
       await layerService.delete(id, request.user.id);
       return reply.send({ success: true });
-    }
+    },
   );
 
   // POST /api/layers/:id/react
@@ -153,7 +164,7 @@ export async function layerRoutes(app: FastifyInstance) {
     },
     async (
       request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
+      reply: FastifyReply,
     ) => {
       const { id } = request.params;
       const { type } = z
@@ -163,7 +174,7 @@ export async function layerRoutes(app: FastifyInstance) {
         .parse(request.body);
       const result = await layerService.react(id, request.user.id, type);
       return reply.send({ success: true, data: result });
-    }
+    },
   );
 
   // GET /api/layers/location/:locationId
@@ -180,7 +191,7 @@ export async function layerRoutes(app: FastifyInstance) {
         Params: { locationId: string };
         Querystring: { year?: number; type?: string };
       }>,
-      reply: FastifyReply
+      reply: FastifyReply,
     ) => {
       const { locationId } = request.params;
       const { year, type } = request.query;
@@ -189,6 +200,6 @@ export async function layerRoutes(app: FastifyInstance) {
         type,
       });
       return reply.send({ success: true, data: layers });
-    }
+    },
   );
 }

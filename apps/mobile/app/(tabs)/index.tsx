@@ -62,7 +62,7 @@ const LAYER_ICONS: Record<string, string> = {
 function bearingToScreenX(
   bearing: number,
   compassHeading: number,
-  screenWidth: number
+  screenWidth: number,
 ): number {
   let diff = bearing - compassHeading;
   if (diff > 180) diff -= 360;
@@ -81,13 +81,17 @@ interface ARMarkerProps {
 
 function ARMarker({ layer, screenX, onPress }: ARMarkerProps) {
   const color = LAYER_COLORS[layer.type] ?? "#9ca3af";
-  const icon = (LAYER_ICONS[layer.type] ?? "location") as keyof typeof Ionicons.glyphMap;
+  const icon = (LAYER_ICONS[layer.type] ??
+    "location") as keyof typeof Ionicons.glyphMap;
 
   const pulse = useSharedValue(1);
   useEffect(() => {
     pulse.value = withRepeat(
-      withSequence(withTiming(1.15, { duration: 800 }), withTiming(1, { duration: 800 })),
-      -1
+      withSequence(
+        withTiming(1.15, { duration: 800 }),
+        withTiming(1, { duration: 800 }),
+      ),
+      -1,
     );
   }, [pulse]);
 
@@ -97,14 +101,24 @@ function ARMarker({ layer, screenX, onPress }: ARMarkerProps) {
 
   return (
     <TouchableOpacity
-      style={[styles.marker, { left: screenX - 28, backgroundColor: color + "33" }]}
+      style={[
+        styles.marker,
+        { left: screenX - 28, backgroundColor: color + "33" },
+      ]}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Animated.View style={[styles.markerInner, { borderColor: color }, pulseStyle]}>
+      <Animated.View
+        style={[styles.markerInner, { borderColor: color }, pulseStyle]}
+      >
         <Ionicons name={icon} size={18} color={color} />
       </Animated.View>
-      <View style={[styles.markerLabel, { backgroundColor: color + "22", borderColor: color + "44" }]}>
+      <View
+        style={[
+          styles.markerLabel,
+          { backgroundColor: color + "22", borderColor: color + "44" },
+        ]}
+      >
         <Text style={[styles.markerTitle, { color }]} numberOfLines={1}>
           {layer.title ?? layer.type}
         </Text>
@@ -117,9 +131,13 @@ function ARMarker({ layer, screenX, onPress }: ARMarkerProps) {
 export default function ARScreen() {
   const router = useRouter();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null,
+  );
   const [compassHeading, setCompassHeading] = useState(0);
-  const headingSubscription = useRef<Location.LocationSubscription | null>(null);
+  const headingSubscription = useRef<Location.LocationSubscription | null>(
+    null,
+  );
 
   // Request location
   useEffect(() => {
@@ -129,7 +147,7 @@ export default function ARScreen() {
         Alert.alert(
           "Konum Gerekli",
           "LAYR yakınındaki katmanları göstermek için konum iznine ihtiyaç duyar.",
-          [{ text: "Tamam" }]
+          [{ text: "Tamam" }],
         );
         return;
       }
@@ -140,9 +158,11 @@ export default function ARScreen() {
       setLocation(loc);
 
       // Track heading (compass)
-      headingSubscription.current = await Location.watchHeadingAsync((heading) => {
-        setCompassHeading(heading.trueHeading ?? heading.magHeading);
-      });
+      headingSubscription.current = await Location.watchHeadingAsync(
+        (heading) => {
+          setCompassHeading(heading.trueHeading ?? heading.magHeading);
+        },
+      );
     })();
 
     return () => {
@@ -152,10 +172,15 @@ export default function ARScreen() {
 
   // Fetch nearby layers
   const { data: nearbyData } = useQuery({
-    queryKey: ["layers", "nearby", location?.coords.latitude, location?.coords.longitude],
+    queryKey: [
+      "layers",
+      "nearby",
+      location?.coords.latitude,
+      location?.coords.longitude,
+    ],
     queryFn: () =>
       apiClient.get(
-        `/api/layers/nearby?lat=${location!.coords.latitude}&lng=${location!.coords.longitude}&radius=500&limit=20`
+        `/api/layers/nearby?lat=${location!.coords.latitude}&lng=${location!.coords.longitude}&radius=500&limit=20`,
       ),
     enabled: !!location,
     refetchInterval: 30_000,
@@ -174,11 +199,12 @@ export default function ARScreen() {
       const dLng = ((targetLng - location.coords.longitude) * Math.PI) / 180;
       const y = Math.sin(dLng) * Math.cos(lat2);
       const x =
-        Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+        Math.cos(lat1) * Math.sin(lat2) -
+        Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
       const bearing = (Math.atan2(y, x) * 180) / Math.PI;
       return (bearing + 360) % 360;
     },
-    [location]
+    [location],
   );
 
   if (!cameraPermission) return <View style={styles.container} />;
@@ -186,12 +212,19 @@ export default function ARScreen() {
   if (!cameraPermission.granted) {
     return (
       <View style={styles.permissionContainer}>
-        <Ionicons name="camera-outline" size={64} color="rgba(255,255,255,0.3)" />
+        <Ionicons
+          name="camera-outline"
+          size={64}
+          color="rgba(255,255,255,0.3)"
+        />
         <Text style={styles.permissionTitle}>Kamera İzni Gerekli</Text>
         <Text style={styles.permissionText}>
           AR katmanlarını görmek için kameraya erişim gerekiyor.
         </Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestCameraPermission}>
+        <TouchableOpacity
+          style={styles.permissionButton}
+          onPress={requestCameraPermission}
+        >
           <Text style={styles.permissionButtonText}>İzin Ver</Text>
         </TouchableOpacity>
       </View>
@@ -232,7 +265,11 @@ export default function ARScreen() {
 
         {/* Compass indicator */}
         <View style={styles.compass}>
-          <Ionicons name="compass-outline" size={22} color="rgba(255,255,255,0.6)" />
+          <Ionicons
+            name="compass-outline"
+            size={22}
+            color="rgba(255,255,255,0.6)"
+          />
           <Text style={styles.compassText}>{Math.round(compassHeading)}°</Text>
         </View>
 
@@ -240,8 +277,7 @@ export default function ARScreen() {
         {layers.length === 0 && (
           <View style={styles.noLayersHint}>
             <Text style={styles.noLayersText}>
-              Henüz yakında katman yok.{"\n"}
-              + butonuyla ilk hikayeni bırak.
+              Henüz yakında katman yok.{"\n"}+ butonuyla ilk hikayeni bırak.
             </Text>
           </View>
         )}

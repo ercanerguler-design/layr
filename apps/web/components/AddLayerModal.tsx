@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   X,
@@ -9,6 +9,11 @@ import {
   CheckCircle,
   ImagePlus,
   Trash2,
+  Mic,
+  MicOff,
+  Square,
+  Play,
+  Pause,
 } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import Image from "next/image";
@@ -27,6 +32,8 @@ const LAYER_TYPES = [
   { key: "TEXT", label: "Not", icon: "💬", color: "#6b7280" },
   { key: "EVENT", label: "Etkinlik", icon: "📅", color: "#ec4899" },
   { key: "PHOTO", label: "Fotoğraf", icon: "📷", color: "#3b82f6" },
+  { key: "AUDIO", label: "Ses Kaydı", icon: "🎙️", color: "#f97316" },
+  { key: "AR_OBJECT", label: "3D Model", icon: "🧊", color: "#06b6d4" },
 ] as const;
 
 type LayerTypeKey = (typeof LAYER_TYPES)[number]["key"];
@@ -50,17 +57,99 @@ export function AddLayerModal({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
+  // Ses kayıt state
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [recording, setRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const selected = LAYER_TYPES.find((t) => t.key === type)!;
+
+  // Ses kayıt temizle
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      mediaRecorderRef.current?.stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mr.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      mr.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        stream.getTracks().forEach((t) => t.stop());
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setRecording(true);
+      setRecordSeconds(0);
+      timerRef.current = setInterval(() => {
+        setRecordSeconds((s) => {
+          if (s >= 300) {
+            mr.stop();
+            setRecording(false);
+          }
+          return s + 1;
+        });
+      }, 1000);
+    } catch {
+      alert("Mikrofon izni gerekli.");
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setAudioDuration(recordSeconds);
+  };
+
+  const playAudio = () => {
+    if (!audioBlob) return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setAudioPlaying(false);
+      return;
+    }
+    const url = URL.createObjectURL(audioBlob);
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.onended = () => {
+      setAudioPlaying(false);
+      audioRef.current = null;
+    };
+    audio.play();
+    setAudioPlaying(true);
+  };
+
+  const formatSeconds = (s: number) =>
+    `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      alert("Maksimum 10 MB.");
+    const maxMB = type === "AR_OBJECT" ? 50 : 10;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`Maksimum ${maxMB} MB.`);
       return;
     }
     setPhotoFile(file);
+    // 3D model için DataURL preview gerekmez
+    if (type === "AR_OBJECT") {
+      setPhotoPreview("3d-model");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
@@ -68,9 +157,13 @@ export function AddLayerModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() && type !== "PHOTO") return;
+    if (!content.trim() && type !== "PHOTO" && type !== "AUDIO") return;
     if (type === "PHOTO" && !photoFile && !content.trim()) {
       alert("Fotoğraf seç veya açıklama yaz.");
+      return;
+    }
+    if (type === "AUDIO" && !audioBlob && !content.trim()) {
+      alert("Ses kaydı yap veya açıklama yaz.");
       return;
     }
 
@@ -112,11 +205,32 @@ export function AddLayerModal({
         setUploadingPhoto(false);
       }
 
+      // Ses kaydı varsa yükle
+      if (audioBlob && type === "AUDIO") {
+        setUploadingPhoto(true);
+        const audioFile = new File([audioBlob], "kayit.webm", {
+          type: "audio/webm",
+        });
+        const formData = new FormData();
+        formData.append("file", audioFile);
+        const uploadRes = await apiClient.post("/api/media/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const mediaKey = uploadRes.data?.data?.key;
+        if (mediaKey) mediaIds = [mediaKey];
+        setUploadingPhoto(false);
+      }
+
       await apiClient.post("/api/layers", {
         locationId,
         title: title.trim() || undefined,
         content:
-          content.trim() || (type === "PHOTO" ? "📷 Fotoğraf paylaşıldı" : ""),
+          content.trim() ||
+          (type === "PHOTO"
+            ? "📷 Fotoğraf paylaşıldı"
+            : type === "AUDIO"
+              ? `🎙️ Ses kaydı — ${formatSeconds(audioDuration)}`
+              : ""),
         type,
         year: year ? parseInt(year) : undefined,
         isPublic: true,
@@ -237,6 +351,82 @@ export function AddLayerModal({
             />
           </div>
 
+          {/* Ses Kaydı — sadece AUDIO tipinde */}
+          {type === "AUDIO" && (
+            <div>
+              <label className="block text-xs text-white/60 mb-1.5 font-semibold uppercase tracking-wide">
+                Ses Kaydı{" "}
+                {!audioBlob && <span className="text-red-400">*</span>}
+              </label>
+
+              {!audioBlob ? (
+                <div className="flex flex-col items-center gap-3 py-6 border-2 border-dashed border-orange-500/30 rounded-xl bg-orange-500/5">
+                  {recording ? (
+                    <>
+                      <div className="w-16 h-16 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center animate-pulse">
+                        <Mic size={28} className="text-red-400" />
+                      </div>
+                      <div className="text-red-400 font-mono text-xl font-bold">
+                        {formatSeconds(recordSeconds)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={stopRecording}
+                        className="flex items-center gap-2 bg-red-500/20 border border-red-500/40 text-red-400 px-4 py-2 rounded-full text-sm font-semibold"
+                      >
+                        <Square size={14} fill="currentColor" /> Durdur
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Mic size={32} className="text-orange-400/60" />
+                      <p className="text-white/40 text-xs">Konuşmanı kaydet</p>
+                      <button
+                        type="button"
+                        onClick={startRecording}
+                        className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white px-5 py-2.5 rounded-full text-sm font-bold transition-colors"
+                      >
+                        <Mic size={16} /> Kayda Başla
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+                  <button
+                    type="button"
+                    onClick={playAudio}
+                    className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0"
+                  >
+                    {audioPlaying ? (
+                      <Pause size={16} className="text-white" />
+                    ) : (
+                      <Play size={14} className="text-white ml-0.5" />
+                    )}
+                  </button>
+                  <div className="flex-1">
+                    <div className="text-sm text-white font-semibold">
+                      Ses Kaydı
+                    </div>
+                    <div className="text-xs text-white/50">
+                      {formatSeconds(audioDuration)} • webm
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAudioBlob(null);
+                      setAudioDuration(0);
+                    }}
+                    className="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center"
+                  >
+                    <Trash2 size={12} className="text-red-400" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Fotoğraf yükleme — sadece PHOTO tipinde */}
           {type === "PHOTO" && (
             <div>
@@ -311,6 +501,61 @@ export function AddLayerModal({
               {content.length}/3000
             </div>
           </div>
+
+          {/* 3D Model yükleme — sadece AR_OBJECT tipinde */}
+          {type === "AR_OBJECT" && (
+            <div>
+              <label className="block text-xs text-white/60 mb-1.5 font-semibold uppercase tracking-wide">
+                3D Model Dosyası (.glb veya .gltf)
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              {photoPreview ? (
+                <div className="flex items-center gap-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-lg">
+                    🧊
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm text-white font-semibold">
+                      {photoFile?.name}
+                    </div>
+                    <div className="text-xs text-white/50">
+                      {photoFile
+                        ? (photoFile.size / 1024 / 1024).toFixed(1)
+                        : 0}{" "}
+                      MB
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoFile(null);
+                      setPhotoPreview(null);
+                    }}
+                    className="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center"
+                  >
+                    <Trash2 size={12} className="text-red-400" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-28 border-2 border-dashed border-cyan-500/30 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-cyan-400/50 hover:bg-cyan-400/5 transition-colors"
+                >
+                  <span className="text-3xl">🧊</span>
+                  <span className="text-xs text-white/40">
+                    GLB / GLTF dosyası seç (max 50 MB)
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Yıl (tarihsel içerik için) */}
           {type === "HISTORICAL" && (

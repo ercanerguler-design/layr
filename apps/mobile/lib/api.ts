@@ -38,12 +38,15 @@ apiClient.interceptors.response.use(
           original.headers.Authorization = `Bearer ${newToken}`;
           return apiClient(original);
         } catch {
-          await AsyncStorage.multiRemove(["layr_access_token", "layr_refresh_token"]);
+          await AsyncStorage.multiRemove([
+            "layr_access_token",
+            "layr_refresh_token",
+          ]);
         }
       }
     }
     return Promise.reject(err);
-  }
+  },
 );
 
 export const api = {
@@ -57,7 +60,9 @@ export const api = {
   },
   layers: {
     nearby: (lat: number, lng: number, radius = 500) =>
-      apiClient.get(`/api/layers/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
+      apiClient.get(
+        `/api/layers/nearby?lat=${lat}&lng=${lng}&radius=${radius}`,
+      ),
     getById: (id: string) => apiClient.get(`/api/layers/${id}`),
     create: (data: object) => apiClient.post("/api/layers", data),
     react: (id: string, type: string) =>
@@ -67,7 +72,9 @@ export const api = {
   locations: {
     findOrCreate: (data: object) => apiClient.post("/api/locations", data),
     nearby: (lat: number, lng: number, radius = 1000) =>
-      apiClient.get(`/api/locations/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
+      apiClient.get(
+        `/api/locations/nearby?lat=${lat}&lng=${lng}&radius=${radius}`,
+      ),
   },
   ai: {
     summary: (locationId: string) =>

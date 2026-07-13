@@ -69,6 +69,7 @@ model Location {
 
   layers    Layer[]
   aiSummary AiSummary?
+  aiAgent   AiAgent?
 
   @@index([lat, lng])
   @@index([city])
@@ -232,4 +233,24 @@ model BusinessProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("business_profiles")
+}
+
+model AiAgent {
+  id          String   @id @default(cuid())
+  locationId  String   @unique
+  name        String
+  title       String?
+  persona     String
+  greeting    String?
+  avatarEmoji String   @default("🤖")
+  avatarColor String   @default("#6366f1")
+  type        String   @default("NARRATOR")
+  voiceLang   String   @default("tr-TR")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_agents")
 }
