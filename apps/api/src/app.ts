@@ -108,3 +108,14 @@ export async function buildApp() {
 
   return app;
 }
+
+// Vercel detects src/app.ts as the Fastify entrypoint.
+export const server = await buildApp();
+
+export default async function handler(
+  request: import("node:http").IncomingMessage,
+  response: import("node:http").ServerResponse,
+) {
+  await server.ready();
+  server.server.emit("request", request, response);
+}

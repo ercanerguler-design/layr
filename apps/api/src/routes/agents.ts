@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
 import { prisma } from "@layr/db";
 import { authenticate } from "../middleware/authenticate.js";
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import { config } from "../config.js";
 
 const openai = config.openaiApiKey

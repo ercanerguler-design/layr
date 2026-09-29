@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import { prisma } from "@layr/db";
 import { config } from "../config.js";
 
