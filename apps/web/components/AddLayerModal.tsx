@@ -10,7 +10,6 @@ import {
   ImagePlus,
   Trash2,
   Mic,
-  MicOff,
   Square,
   Play,
   Pause,
@@ -43,7 +42,7 @@ export function AddLayerModal({
   lng,
   onClose,
   onSuccess,
-}: AddLayerModalProps) {
+}: AddLayerModalProps): JSX.Element {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState<LayerTypeKey>("MEMORY");
@@ -192,7 +191,7 @@ export function AddLayerModal({
       const locationId = locRes.data.data.id;
 
       // Fotoğraf varsa önce yükle
-      let mediaIds: string[] = [];
+      const media: Array<{ url: string; type: string; mimeType: string; size: number }> = [];
       if (photoFile && type === "PHOTO") {
         setUploadingPhoto(true);
         const formData = new FormData();
@@ -200,8 +199,8 @@ export function AddLayerModal({
         const uploadRes = await apiClient.post("/api/media/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const mediaKey = uploadRes.data?.data?.key;
-        if (mediaKey) mediaIds = [mediaKey];
+        const uploaded = uploadRes.data?.data;
+        if (uploaded?.url) media.push(uploaded);
         setUploadingPhoto(false);
       }
 
@@ -216,8 +215,8 @@ export function AddLayerModal({
         const uploadRes = await apiClient.post("/api/media/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const mediaKey = uploadRes.data?.data?.key;
-        if (mediaKey) mediaIds = [mediaKey];
+        const uploaded = uploadRes.data?.data;
+        if (uploaded?.url) media.push(uploaded);
         setUploadingPhoto(false);
       }
 
@@ -238,7 +237,7 @@ export function AddLayerModal({
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
-        mediaIds,
+        media,
       });
 
       setDone(true);
@@ -253,7 +252,7 @@ export function AddLayerModal({
         alert("Oturum süresi dolmuş. Tekrar giriş yap.");
         router.push("/login");
       } else {
-        alert("Katman eklenemedi. Tekrar dene.");
+        alert(msg || "Katman eklenemedi. Tekrar dene.");
       }
     } finally {
       setLoading(false);

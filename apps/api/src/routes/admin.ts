@@ -1,8 +1,8 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { prisma } from "@layr/db";
 import { authenticate } from "../middleware/authenticate.js";
 
-async function requireAdmin(request: FastifyRequest, reply: FastifyReply) {
+async function requireAdmin(request: any, reply: FastifyReply) {
   await authenticate(request, reply);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((request.user as any).role !== "ADMIN") {
@@ -120,7 +120,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.delete(
     "/layers/:id",
     { preHandler: requireAdmin },
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+    async (request: any, reply) => {
       await prisma.layer.delete({ where: { id: request.params.id } });
       return reply.send({ success: true });
     },
@@ -130,13 +130,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch(
     "/users/:id/role",
     { preHandler: requireAdmin },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { role: string };
-      }>,
-      reply,
-    ) => {
+    async (request: any, reply) => {
       const user = await prisma.user.update({
         where: { id: request.params.id },
         data: { role: request.body.role as never },
@@ -150,13 +144,7 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch(
     "/users/:id/premium",
     { preHandler: requireAdmin },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { isPremium?: boolean; isVerified?: boolean };
-      }>,
-      reply,
-    ) => {
+    async (request: any, reply) => {
       const { isPremium, isVerified } = request.body;
       const data: Record<string, boolean> = {};
       if (isPremium !== undefined) data["isPremium"] = isPremium;
@@ -179,66 +167,59 @@ export async function adminRoutes(app: FastifyInstance) {
   );
 
   // GET /api/admin/users — Tüm kullanıcılar (yönetim için)
-  app.get(
-    "/users",
-    { preHandler: requireAdmin },
-    async (
-      request: FastifyRequest<{ Querystring: { page?: number; q?: string } }>,
-      reply,
-    ) => {
-      const page = Number(request.query.page ?? 1);
-      const q = request.query.q ?? "";
-      const take = 20;
+  app.get("/users", { preHandler: requireAdmin }, async (request: any, reply) => {
+    const page = Number(request.query.page ?? 1);
+    const q = request.query.q ?? "";
+    const take = 20;
 
-      const where = q
-        ? {
-            OR: [
-              { username: { contains: q } },
-              { email: { contains: q } },
-              { displayName: { contains: q } },
-            ],
-          }
-        : {};
+    const where = q
+      ? {
+          OR: [
+            { username: { contains: q } },
+            { email: { contains: q } },
+            { displayName: { contains: q } },
+          ],
+        }
+      : {};
 
-      const [users, total] = await Promise.all([
-        prisma.user.findMany({
-          where,
-          orderBy: { createdAt: "desc" },
-          take,
-          skip: (page - 1) * take,
-          select: {
-            id: true,
-            email: true,
-            username: true,
-            displayName: true,
-            role: true,
-            isPremium: true,
-            isVerified: true,
-            createdAt: true,
-            lastActiveAt: true,
-            _count: { select: { layers: true } },
-          },
-        }),
-        prisma.user.count({ where }),
-      ]);
-
-      return reply.send({
-        success: true,
-        data: {
-          users: users.map((u) => ({ ...u, layerCount: u._count.layers })),
-          total,
-          page,
-          pages: Math.ceil(total / take),
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        take,
+        skip: (page - 1) * take,
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          displayName: true,
+          role: true,
+          isPremium: true,
+          isVerified: true,
+          createdAt: true,
+          lastActiveAt: true,
+          _count: { select: { layers: true } },
         },
-      });
-    },
-  );
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return reply.send({
+      success: true,
+      data: {
+        users: users.map((u) => ({ ...u, layerCount: u._count.layers })),
+        total,
+        page,
+        pages: Math.ceil(total / take),
+      },
+    });
+  });
 
   // DELETE /api/admin/users/:id — Kullanıcı sil
   app.delete(
     "/users/:id",
     { preHandler: requireAdmin },
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+    async (request: any, reply) => {
       await prisma.user.delete({ where: { id: request.params.id } });
       return reply.send({ success: true });
     },

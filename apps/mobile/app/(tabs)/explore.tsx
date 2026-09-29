@@ -8,8 +8,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  FlatList,
-  Dimensions,
 } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useQuery } from "@tanstack/react-query";
@@ -18,8 +16,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { NearbyLayer } from "@layr/types";
 import { apiClient } from "@/lib/api";
-
-const { height: H } = Dimensions.get("window");
 
 const LAYER_COLORS: Record<string, string> = {
   MEMORY: "#f59e0b",

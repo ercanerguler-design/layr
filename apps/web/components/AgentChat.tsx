@@ -25,7 +25,11 @@ interface AgentChatProps {
   onClose: () => void;
 }
 
-export function AgentChat({ locationId, agent, onClose }: AgentChatProps) {
+export function AgentChat({
+  locationId,
+  agent,
+  onClose,
+}: AgentChatProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",

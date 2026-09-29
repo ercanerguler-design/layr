@@ -26,7 +26,7 @@ const tabs = [
   {
     name: "create",
     title: "Bırak",
-    icon: (p: TabIconProps) => (
+    icon: () => (
       <View style={styles.createButton}>
         <Ionicons name="add" size={28} color="white" />
       </View>

@@ -49,7 +49,7 @@ const stats = [
   { value: "4", label: "Kullanıcı", icon: Users },
 ];
 
-export default function HomePage() {
+export default function HomePage(): JSX.Element {
   return (
     <main
       className="min-h-screen text-white overflow-hidden"

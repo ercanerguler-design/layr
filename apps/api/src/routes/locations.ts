@@ -23,9 +23,24 @@ const createLocationSchema = z.object({
   placeId: z.string().optional(),
   category: z
     .enum([
-      "LANDMARK", "RESTAURANT", "CAFE", "MUSEUM", "PARK", "STREET",
-      "BUILDING", "MARKET", "TRANSPORT", "NATURE", "SPORTS", "CEMETERY",
-      "EDUCATION", "HOSPITAL", "RELIGIOUS", "GOVERNMENT", "ENTERTAINMENT", "OTHER",
+      "LANDMARK",
+      "RESTAURANT",
+      "CAFE",
+      "MUSEUM",
+      "PARK",
+      "STREET",
+      "BUILDING",
+      "MARKET",
+      "TRANSPORT",
+      "NATURE",
+      "SPORTS",
+      "CEMETERY",
+      "EDUCATION",
+      "HOSPITAL",
+      "RELIGIOUS",
+      "GOVERNMENT",
+      "ENTERTAINMENT",
+      "OTHER",
     ])
     .default("OTHER"),
 });
@@ -41,19 +56,14 @@ export async function locationRoutes(app: FastifyInstance) {
       const query = searchSchema.parse(request.query);
       const result = await locationService.search(query);
       return reply.send({ success: true, data: result });
-    }
+    },
   );
 
   // GET /api/locations/nearby?lat=&lng=&radius=
   app.get(
     "/nearby",
     { schema: { tags: ["locations"], summary: "Get nearby locations" } },
-    async (
-      request: FastifyRequest<{
-        Querystring: { lat: number; lng: number; radius?: number; limit?: number };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { lat, lng, radius = 1000, limit = 20 } = request.query;
       const result = await locationService.getNearby({
         lat: Number(lat),
@@ -62,23 +72,22 @@ export async function locationRoutes(app: FastifyInstance) {
         limit: Number(limit),
       });
       return reply.send({ success: true, data: result });
-    }
+    },
   );
 
   // GET /api/locations/:id
   app.get(
     "/:id",
     { schema: { tags: ["locations"], summary: "Get location by ID" } },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: any, reply) => {
       const location = await locationService.getById(request.params.id);
       if (!location) {
-        return reply.status(404).send({ success: false, error: "Location not found" });
+        return reply
+          .status(404)
+          .send({ success: false, error: "Location not found" });
       }
       return reply.send({ success: true, data: location });
-    }
+    },
   );
 
   // POST /api/locations — create (or find existing)
@@ -89,7 +98,7 @@ export async function locationRoutes(app: FastifyInstance) {
       const body = createLocationSchema.parse(request.body);
       const location = await locationService.findOrCreate(body);
       return reply.status(201).send({ success: true, data: location });
-    }
+    },
   );
 
   // GET /api/locations/:id/time-travel?year=
@@ -101,17 +110,11 @@ export async function locationRoutes(app: FastifyInstance) {
         summary: "Get historical layers for a location at a specific year",
       },
     },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Querystring: { year: number };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: any, reply) => {
       const { id } = request.params;
       const year = Number(request.query.year);
       const result = await locationService.getHistoricalSnapshot(id, year);
       return reply.send({ success: true, data: result });
-    }
+    },
   );
 }

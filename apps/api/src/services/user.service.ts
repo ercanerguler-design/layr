@@ -35,14 +35,25 @@ export class UserService {
     };
   }
 
-  async update(userId: string, input: Partial<{
-    displayName: string;
-    bio: string;
-    interestTags: string[];
-  }>) {
+  async update(
+    userId: string,
+    input: Partial<{
+      displayName: string;
+      bio: string;
+      interestTags: string[];
+    }>,
+  ) {
+    const data = {
+      ...input,
+      interestTags:
+        input.interestTags !== undefined
+          ? JSON.stringify(input.interestTags)
+          : undefined,
+    };
+
     return prisma.user.update({
       where: { id: userId },
-      data: input,
+      data,
       select: {
         id: true,
         username: true,
@@ -57,10 +68,7 @@ export class UserService {
     });
   }
 
-  async getLayers(
-    username: string,
-    opts: { limit: number; offset: number }
-  ) {
+  async getLayers(username: string, opts: { limit: number; offset: number }) {
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user) return [];
 
@@ -79,9 +87,12 @@ export class UserService {
 
   async follow(followerId: string, username: string) {
     const following = await prisma.user.findUnique({ where: { username } });
-    if (!following) throw Object.assign(new Error("User not found"), { statusCode: 404 });
+    if (!following)
+      throw Object.assign(new Error("User not found"), { statusCode: 404 });
     if (following.id === followerId)
-      throw Object.assign(new Error("Cannot follow yourself"), { statusCode: 400 });
+      throw Object.assign(new Error("Cannot follow yourself"), {
+        statusCode: 400,
+      });
 
     await prisma.follow.upsert({
       where: {

@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+let refreshPromise: Promise<string> | null = null;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -30,10 +30,20 @@ apiClient.interceptors.response.use(
       const refreshToken = localStorage.getItem("layr_refresh_token");
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, {
-            refreshToken,
-          });
-          const newToken = data.data.accessToken;
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post(`${BASE_URL}/api/auth/refresh`, { refreshToken })
+              .then(({ data }) => {
+                const { accessToken, refreshToken: newRefreshToken } = data.data;
+                localStorage.setItem("layr_access_token", accessToken);
+                localStorage.setItem("layr_refresh_token", newRefreshToken);
+                return accessToken as string;
+              })
+              .finally(() => {
+                refreshPromise = null;
+              });
+          }
+          const newToken = await refreshPromise;
           localStorage.setItem("layr_access_token", newToken);
           original.headers.Authorization = `Bearer ${newToken}`;
           return apiClient(original);
@@ -45,7 +55,7 @@ apiClient.interceptors.response.use(
       }
     }
     return Promise.reject(err);
-  }
+  },
 );
 
 // ─── Typed API helpers ─────────────────────────────────────────
@@ -68,11 +78,11 @@ export const api = {
   layers: {
     nearby: (lat: number, lng: number, radius = 500) =>
       apiClient.get(
-        `/api/layers/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
+        `/api/layers/nearby?lat=${lat}&lng=${lng}&radius=${radius}`,
       ),
     byLocation: (locationId: string, year?: number) =>
       apiClient.get(
-        `/api/layers/location/${locationId}${year ? `?year=${year}` : ""}`
+        `/api/layers/location/${locationId}${year ? `?year=${year}` : ""}`,
       ),
     getById: (id: string) => apiClient.get(`/api/layers/${id}`),
     create: (data: object) => apiClient.post("/api/layers", data),
@@ -86,7 +96,7 @@ export const api = {
       apiClient.get(`/api/locations/search?q=${encodeURIComponent(q)}`),
     nearby: (lat: number, lng: number, radius = 1000) =>
       apiClient.get(
-        `/api/locations/nearby?lat=${lat}&lng=${lng}&radius=${radius}`
+        `/api/locations/nearby?lat=${lat}&lng=${lng}&radius=${radius}`,
       ),
     getById: (id: string) => apiClient.get(`/api/locations/${id}`),
     timeTravel: (id: string, year: number) =>
@@ -99,8 +109,7 @@ export const api = {
       apiClient.get(`/api/ai/summary/${locationId}`),
     narrate: (locationId: string, opts: object) =>
       apiClient.post(`/api/ai/narrate/${locationId}`, opts),
-    analyzeProduct: (data: object) =>
-      apiClient.post("/api/ai/product", data),
+    analyzeProduct: (data: object) => apiClient.post("/api/ai/product", data),
     personalize: (lat: number, lng: number) =>
       apiClient.post("/api/ai/personalize", { lat, lng }),
     timeNarrate: (locationId: string, year: number) =>

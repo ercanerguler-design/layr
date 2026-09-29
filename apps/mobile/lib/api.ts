@@ -2,8 +2,16 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 
+const configuredApiUrl = Constants.expoConfig?.extra?.apiUrl as string | undefined;
+const packagerHost = Constants.expoConfig?.hostUri?.split(":")[0];
 const BASE_URL =
-  (Constants.expoConfig?.extra?.apiUrl as string) ?? "http://localhost:3001";
+  configuredApiUrl ??
+  (packagerHost ? `http://${packagerHost}:3001` : "http://localhost:3001");
+let refreshPromise: Promise<string> | null = null;
+
+export function resolveMediaUrl(url: string) {
+  return url.startsWith("/") ? new URL(url, BASE_URL).toString() : url;
+}
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -30,11 +38,22 @@ apiClient.interceptors.response.use(
       const refreshToken = await AsyncStorage.getItem("layr_refresh_token");
       if (refreshToken) {
         try {
-          const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, {
-            refreshToken,
-          });
-          const newToken = data.data.accessToken;
-          await AsyncStorage.setItem("layr_access_token", newToken);
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post(`${BASE_URL}/api/auth/refresh`, { refreshToken })
+              .then(async ({ data }) => {
+                const { accessToken, refreshToken: newRefreshToken } = data.data;
+                await AsyncStorage.multiSet([
+                  ["layr_access_token", accessToken],
+                  ["layr_refresh_token", newRefreshToken],
+                ]);
+                return accessToken as string;
+              })
+              .finally(() => {
+                refreshPromise = null;
+              });
+          }
+          const newToken = await refreshPromise;
           original.headers.Authorization = `Bearer ${newToken}`;
           return apiClient(original);
         } catch {
@@ -75,6 +94,15 @@ export const api = {
       apiClient.get(
         `/api/locations/nearby?lat=${lat}&lng=${lng}&radius=${radius}`,
       ),
+  },
+  media: {
+    upload: (file: { uri: string; name: string; type: string }) => {
+      const form = new FormData();
+      form.append("file", file as unknown as Blob);
+      return apiClient.post("/api/media/upload", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    },
   },
   ai: {
     summary: (locationId: string) =>

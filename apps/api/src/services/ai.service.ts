@@ -45,7 +45,12 @@ export class AiService {
     id: string;
     name: string;
     description: string | null;
-    layers: Array<{ content: string; type: string; year: number | null; tags: string[] }>;
+    layers: Array<{
+      content: string;
+      type: string;
+      year: number | null;
+      tags: string | string[];
+    }>;
     aiSummary: unknown;
   }) {
     if (!this.openai || location.layers.length === 0) {
@@ -55,12 +60,14 @@ export class AiService {
         create: {
           locationId: location.id,
           summary: `${location.name} hakkında ${location.layers.length} hikaye var.`,
-          highlights: [],
-          languages: ["tr"],
+          highlights: JSON.stringify([]),
+          languages: JSON.stringify(["tr"]),
           layerCount: location.layers.length,
         },
         update: {
           summary: `${location.name} hakkında ${location.layers.length} hikaye var.`,
+          highlights: JSON.stringify([]),
+          languages: JSON.stringify(["tr"]),
           layerCount: location.layers.length,
           lastGenerated: new Date(),
         },
@@ -107,8 +114,12 @@ Lütfen şunları üret:
       .slice(0, 3)
       .map((l) => l.replace(/^[-•\d.]\s*/, "").trim());
 
-    const sentimentMatch = text.match(/(nostalgic|inspiring|informative|sad|happy)/i);
-    const sentiment = sentimentMatch ? sentimentMatch[0].toLowerCase() : "informative";
+    const sentimentMatch = text.match(
+      /(nostalgic|inspiring|informative|sad|happy)/i,
+    );
+    const sentiment = sentimentMatch
+      ? sentimentMatch[0].toLowerCase()
+      : "informative";
 
     return prisma.aiSummary.upsert({
       where: { locationId: location.id },
@@ -117,13 +128,14 @@ Lütfen şunları üret:
         summary,
         highlights: JSON.stringify(highlights),
         sentiment,
-        languages: '["tr"]',
+        languages: JSON.stringify(["tr"]),
         layerCount: location.layers.length,
       },
       update: {
         summary,
         highlights: JSON.stringify(highlights),
         sentiment,
+        languages: JSON.stringify(["tr"]),
         layerCount: location.layers.length,
         lastGenerated: new Date(),
       },
@@ -132,7 +144,7 @@ Lütfen şunları üret:
 
   async generateNarration(
     locationId: string,
-    opts: { year?: number; language: string; mode: string }
+    opts: { year?: number; language: string; mode: string },
   ) {
     const location = await prisma.location.findUnique({
       where: { id: locationId },
@@ -164,8 +176,8 @@ Lütfen şunları üret:
       opts.mode === "children"
         ? "Çocuklara uygun, basit ve eğlenceli bir dil kullan."
         : opts.mode === "academic"
-        ? "Akademik ve detaylı bir anlatım kullan."
-        : "Normal, akıcı ve ilgi çekici bir dil kullan.";
+          ? "Akademik ve detaylı bir anlatım kullan."
+          : "Normal, akıcı ve ilgi çekici bir dil kullan.";
 
     const response = await this.openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -244,7 +256,7 @@ Bu mekân için 30-60 saniyelik bir sesli rehber metni yaz (${opts.language} dil
 
   async getPersonalizedFeed(
     userId: string,
-    opts: { lat: number; lng: number; radius: number }
+    opts: { lat: number; lng: number; radius: number },
   ) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -265,7 +277,14 @@ Bu mekân için 30-60 saniyelik bir sesli rehber metni yaz (${opts.language} dil
       },
       include: {
         user: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isVerified: true, isPremium: true },
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatarUrl: true,
+            isVerified: true,
+            isPremium: true,
+          },
         },
         location: { select: { id: true, name: true, lat: true, lng: true } },
         media: true,
@@ -278,7 +297,11 @@ Bu mekân için 30-60 saniyelik bir sesli rehber metni yaz (${opts.language} dil
       .map((layer) => {
         const dLat = ((layer.location.lat - opts.lat) * Math.PI) / 180;
         const dLng = ((layer.location.lng - opts.lng) * Math.PI) / 180;
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos((opts.lat * Math.PI) / 180) * Math.cos((layer.location.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((opts.lat * Math.PI) / 180) *
+            Math.cos((layer.location.lat * Math.PI) / 180) *
+            Math.sin(dLng / 2) ** 2;
         const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return { ...layer, distance };
       })
@@ -288,7 +311,9 @@ Bu mekân için 30-60 saniyelik bir sesli rehber metni yaz (${opts.language} dil
       const tags: string[] = JSON.parse(layer.tags);
       let score = 0;
       if (interests.length > 0) {
-        score = interests.filter((i) => tags.map((t) => t.toLowerCase()).includes(i.toLowerCase())).length;
+        score = interests.filter((i) =>
+          tags.map((t) => t.toLowerCase()).includes(i.toLowerCase()),
+        ).length;
       }
       return { ...layer, tags, relevanceScore: score };
     });
@@ -297,7 +322,11 @@ Bu mekân için 30-60 saniyelik bir sesli rehber metni yaz (${opts.language} dil
     return scored.slice(0, 20);
   }
 
-  async generateTimeNarration(locationId: string, year: number, language: string) {
+  async generateTimeNarration(
+    locationId: string,
+    year: number,
+    language: string,
+  ) {
     const location = await prisma.location.findUnique({
       where: { id: locationId },
       include: {

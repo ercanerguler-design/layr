@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import { UserService } from "../services/user.service.js";
 import { authenticate } from "../middleware/authenticate.js";
@@ -16,14 +16,14 @@ export async function userRoutes(app: FastifyInstance) {
   app.get(
     "/:username",
     { schema: { tags: ["users"], summary: "Get user profile by username" } },
-    async (
-      request: FastifyRequest<{ Params: { username: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const user = await userService.getByUsername(request.params.username);
-      if (!user) return reply.status(404).send({ success: false, error: "User not found" });
+      if (!user)
+        return reply
+          .status(404)
+          .send({ success: false, error: "User not found" });
       return reply.send({ success: true, data: user });
-    }
+    },
   );
 
   // PATCH /api/users/me
@@ -37,31 +37,25 @@ export async function userRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: any, reply: FastifyReply) => {
       const body = updateProfileSchema.parse(request.body);
       const user = await userService.update(request.user.id, body);
       return reply.send({ success: true, data: user });
-    }
+    },
   );
 
   // GET /api/users/:username/layers
   app.get(
     "/:username/layers",
     { schema: { tags: ["users"], summary: "Get layers by a user" } },
-    async (
-      request: FastifyRequest<{
-        Params: { username: string };
-        Querystring: { limit?: number; offset?: number };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { limit = 20, offset = 0 } = request.query;
       const layers = await userService.getLayers(request.params.username, {
         limit: Number(limit),
         offset: Number(offset),
       });
       return reply.send({ success: true, data: layers });
-    }
+    },
   );
 
   // POST /api/users/:username/follow
@@ -75,13 +69,10 @@ export async function userRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (
-      request: FastifyRequest<{ Params: { username: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: any, reply) => {
       await userService.follow(request.user.id, request.params.username);
       return reply.send({ success: true });
-    }
+    },
   );
 
   // DELETE /api/users/:username/follow
@@ -95,12 +86,9 @@ export async function userRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (
-      request: FastifyRequest<{ Params: { username: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: any, reply) => {
       await userService.unfollow(request.user.id, request.params.username);
       return reply.send({ success: true });
-    }
+    },
   );
 }

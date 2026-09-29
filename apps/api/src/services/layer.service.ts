@@ -47,7 +47,7 @@ interface CreateLayerInput {
   year?: number;
   isPublic?: boolean;
   tags?: string[];
-  mediaIds?: string[];
+  media?: Array<{ url: string; type: string; mimeType: string; size: number }>;
 }
 
 export class LayerService {
@@ -126,6 +126,14 @@ export class LayerService {
         year: input.year,
         isPublic: input.isPublic ?? true,
         tags: JSON.stringify(input.tags ?? []),
+        media: input.media?.length ? {
+          create: input.media.map((item) => ({
+            url: item.url,
+            type: item.type,
+            mimeType: item.mimeType,
+            size: item.size,
+          })),
+        } : undefined,
       },
       include: {
         user: { select: SELECT_USER },
@@ -133,13 +141,6 @@ export class LayerService {
         media: true,
       },
     });
-
-    if (input.mediaIds && input.mediaIds.length > 0) {
-      await prisma.media.updateMany({
-        where: { id: { in: input.mediaIds } },
-        data: { layerId: layer.id },
-      });
-    }
 
     return { ...layer, tags: input.tags ?? [] };
   }

@@ -38,10 +38,7 @@ export async function aiRoutes(app: FastifyInstance) {
         summary: "Get or generate AI summary for a location",
       },
     },
-    async (
-      request: FastifyRequest<{ Params: { locationId: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const summary = await aiService.getLocationSummary(
         request.params.locationId,
       );
@@ -60,13 +57,7 @@ export async function aiRoutes(app: FastifyInstance) {
       },
       preHandler: requirePremiumOrAdmin,
     },
-    async (
-      request: FastifyRequest<{
-        Params: { locationId: string };
-        Body: { year?: number; language?: string; mode?: string };
-      }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { locationId } = request.params;
       const { year, language = "tr", mode = "normal" } = request.body ?? {};
       const result = await aiService.generateNarration(locationId, {
@@ -89,7 +80,7 @@ export async function aiRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: any, reply: FastifyReply) => {
       const body = productAnalysisSchema.parse(request.body);
       const result = await aiService.analyzeProduct(body);
       return reply.send({ success: true, data: result });
@@ -97,7 +88,9 @@ export async function aiRoutes(app: FastifyInstance) {
   );
 
   // POST /api/ai/personalize — Premium: Kişiselleştirilmiş AI feed
-  app.post(
+  app.post<{
+    Body: { lat: number; lng: number; radius?: number };
+  }>(
     "/personalize",
     {
       schema: {
@@ -107,12 +100,7 @@ export async function aiRoutes(app: FastifyInstance) {
       },
       preHandler: requirePremiumOrAdmin,
     },
-    async (
-      request: FastifyRequest<{
-        Body: { lat: number; lng: number; radius?: number };
-      }>,
-      reply: FastifyReply,
-    ) => {
+    async (request, reply) => {
       const { lat, lng, radius = 1000 } = request.body;
       const result = await aiService.getPersonalizedFeed(request.user.id, {
         lat,
@@ -132,12 +120,7 @@ export async function aiRoutes(app: FastifyInstance) {
         summary: "Generate narration for time-travel view of a location",
       },
     },
-    async (
-      request: FastifyRequest<{
-        Body: { locationId: string; year: number; language?: string };
-      }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { locationId, year, language = "tr" } = request.body;
       const result = await aiService.generateTimeNarration(
         locationId,

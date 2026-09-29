@@ -37,7 +37,7 @@ export function ModelViewer({
   className,
   ar = true,
   autoRotate = true,
-}: ModelViewerProps) {
+}: ModelViewerProps): JSX.Element {
   const scriptLoaded = useRef(false);
 
   useEffect(() => {

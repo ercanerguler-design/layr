@@ -16,7 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
-import { api } from "@/lib/api";
+import { api, resolveMediaUrl } from "@/lib/api";
 import type { Layer } from "@layr/types";
 
 const LAYER_COLORS: Record<string, string> = {
@@ -127,9 +127,10 @@ export default function LayerDetailScreen() {
               .map((m) => (
                 <Image
                   key={m.id}
-                  source={{ uri: m.url }}
+                  source={{ uri: resolveMediaUrl(m.url) }}
                   style={styles.mediaThumb}
                   contentFit="cover"
+                  alt="Layer photo"
                 />
               ))}
           </ScrollView>
@@ -143,6 +144,7 @@ export default function LayerDetailScreen() {
                 source={{ uri: layer.user.avatarUrl }}
                 style={styles.avatarImg}
                 contentFit="cover"
+                alt="User avatar"
               />
             ) : (
               <Ionicons name="person" size={16} color="rgba(255,255,255,0.5)" />

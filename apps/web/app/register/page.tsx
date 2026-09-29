@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Loader2, CheckCircle } from "lucide-react";
 
-export default function RegisterPage() {
+export default function RegisterPage(): JSX.Element {
   const router = useRouter();
   const [form, setForm] = useState({
     email: "",
@@ -17,8 +17,9 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const update = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [key]: e.target.value }));
+  const update =
+    (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,20 +31,51 @@ export default function RegisterPage() {
       localStorage.setItem("layr_refresh_token", data.data.refreshToken);
       router.push("/map");
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        "Kayıt başarısız.";
-      setError(msg);
+      const response = (err as {
+        response?: { data?: { message?: string; error?: string } };
+      })?.response?.data;
+      const serverMessage = response?.message ?? response?.error;
+      if (serverMessage === "Email already in use") {
+        setError("Bu e-posta zaten kayitli. Giris yapmayi dene veya baska bir e-posta kullan.");
+      } else if (serverMessage === "Username already taken") {
+        setError("Bu kullanici adi alinmis. Baska bir kullanici adi sec.");
+      } else {
+        setError(serverMessage ?? "Kayit basarisiz. Bilgilerini kontrol edip tekrar dene.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const fields = [
-    { key: "email" as const, label: "E-posta", type: "email", placeholder: "sen@örnek.com", autocomplete: "email" },
-    { key: "username" as const, label: "Kullanıcı adı", type: "text", placeholder: "aliyildiz", autocomplete: "username" },
-    { key: "displayName" as const, label: "Görünen ad", type: "text", placeholder: "Ali Yıldız", autocomplete: "name" },
-    { key: "password" as const, label: "Şifre", type: "password", placeholder: "En az 8 karakter", autocomplete: "new-password" },
+    {
+      key: "email" as const,
+      label: "E-posta",
+      type: "email",
+      placeholder: "sen@örnek.com",
+      autocomplete: "email",
+    },
+    {
+      key: "username" as const,
+      label: "Kullanıcı adı",
+      type: "text",
+      placeholder: "aliyildiz",
+      autocomplete: "username",
+    },
+    {
+      key: "displayName" as const,
+      label: "Görünen ad",
+      type: "text",
+      placeholder: "Ali Yıldız",
+      autocomplete: "name",
+    },
+    {
+      key: "password" as const,
+      label: "Şifre",
+      type: "password",
+      placeholder: "En az 8 karakter",
+      autocomplete: "new-password",
+    },
   ];
 
   return (
@@ -54,7 +86,9 @@ export default function RegisterPage() {
         </Link>
 
         <div className="glass rounded-3xl p-8">
-          <h1 className="text-2xl font-bold mb-2 text-center">İlk izini bırak</h1>
+          <h1 className="text-2xl font-bold mb-2 text-center">
+            İlk izini bırak
+          </h1>
           <p className="text-white/50 text-center text-sm mb-8">
             Ücretsiz hesap oluştur, anılarını dünyayla paylaş.
           </p>
@@ -68,7 +102,9 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {fields.map((f) => (
               <div key={f.key}>
-                <label className="block text-sm text-white/70 mb-1.5">{f.label}</label>
+                <label className="block text-sm text-white/70 mb-1.5">
+                  {f.label}
+                </label>
                 <input
                   type={f.type}
                   value={form[f.key]}
@@ -86,14 +122,21 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 mt-2"
             >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
+              {loading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <CheckCircle size={18} />
+              )}
               Kayıt Ol
             </button>
           </form>
 
           <p className="text-center text-white/50 text-sm mt-6">
             Hesabın var mı?{" "}
-            <Link href="/login" className="text-indigo-400 hover:text-indigo-300">
+            <Link
+              href="/login"
+              className="text-indigo-400 hover:text-indigo-300"
+            >
               Giriş yap
             </Link>
           </p>

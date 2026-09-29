@@ -28,10 +28,7 @@ export async function agentRoutes(app: FastifyInstance) {
   app.get(
     "/:locationId",
     { schema: { tags: ["agents"], summary: "Get AI agent for location" } },
-    async (
-      request: FastifyRequest<{ Params: { locationId: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const agent = await prisma.aiAgent.findUnique({
         where: { locationId: request.params.locationId },
       });
@@ -181,10 +178,7 @@ Kurallar:
       },
       preHandler: authenticate,
     },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((request.user as any).role !== "ADMIN") {
         return reply
@@ -203,10 +197,7 @@ Kurallar:
   app.delete(
     "/:id",
     { preHandler: authenticate },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((request.user as any).role !== "ADMIN") {
         return reply

@@ -9,10 +9,8 @@ import {
   Crown,
   CheckCircle,
   Shield,
-  Trash2,
   UserX,
   RefreshCw,
-  Users,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -29,7 +27,7 @@ interface AdminUser {
   layerCount: number;
 }
 
-export default function AdminUsersPage() {
+export default function AdminUsersPage(): JSX.Element {
   const router = useRouter();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);

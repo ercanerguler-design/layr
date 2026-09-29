@@ -61,7 +61,7 @@ const DEFAULT_PERSONAS: Record<string, string> = {
     "Sen kurgusal bir karaktersin. Rolüne tam uygun, tutarlı ve sürükleyici bir şekilde konuş.",
 };
 
-export default function AdminAgentsPage() {
+export default function AdminAgentsPage(): JSX.Element {
   const router = useRouter();
   const [agents, setAgents] = useState<AiAgent[]>([]);
   const [loading, setLoading] = useState(true);

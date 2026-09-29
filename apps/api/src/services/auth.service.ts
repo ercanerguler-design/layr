@@ -132,7 +132,6 @@ export class AuthService {
       { sub: userId, type: "refresh" },
       {
         expiresIn: config.jwtRefreshExpiresIn,
-        secret: config.jwtRefreshSecret,
       },
     );
 

@@ -1,9 +1,23 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
   PORT: z.coerce.number().default(3001),
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .refine(
+      (value) =>
+        value.startsWith("file:") ||
+        value.startsWith("postgresql://") ||
+        value.startsWith("postgres://"),
+      {
+        message:
+          "DATABASE_URL must be a SQLite file: URL or Postgres connection string.",
+      },
+    ),
   REDIS_URL: z.string().default("redis://localhost:6379"),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),

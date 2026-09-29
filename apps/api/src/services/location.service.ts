@@ -1,12 +1,20 @@
+import type { Media } from "@layr/db";
 import { prisma } from "@layr/db";
 
-function haversineMetres(lat1: number, lng1: number, lat2: number, lng2: number): number {
+function haversineMetres(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
   const R = 6_371_000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
@@ -77,7 +85,9 @@ export class LocationService {
       .map((l) => ({
         ...l,
         layerCount: l._count.layers,
-        distance: Math.round(haversineMetres(query.lat, query.lng, l.lat, l.lng)),
+        distance: Math.round(
+          haversineMetres(query.lat, query.lng, l.lat, l.lng),
+        ),
       }))
       .filter((l) => l.distance <= query.radius)
       .sort((a, b) => a.distance - b.distance)
@@ -141,7 +151,14 @@ export class LocationService {
       },
       include: {
         user: {
-          select: { id: true, username: true, displayName: true, avatarUrl: true, isVerified: true, isPremium: true },
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+            avatarUrl: true,
+            isVerified: true,
+            isPremium: true,
+          },
         },
         media: true,
         _count: { select: { reactions: true } },
@@ -151,9 +168,19 @@ export class LocationService {
 
     return {
       year,
-      layers: layers.map((l) => ({ ...l, tags: JSON.parse(l.tags) as string[], reactionCount: l._count.reactions })),
-      imageCount: layers.filter((l) => l.type === "PHOTO" || l.media.some((m) => m.type === "IMAGE")).length,
-      videoCount: layers.filter((l) => l.type === "VIDEO" || l.media.some((m) => m.type === "VIDEO")).length,
+      layers: layers.map((l) => ({
+        ...l,
+        tags: JSON.parse(l.tags) as string[],
+        reactionCount: l._count.reactions,
+      })),
+      imageCount: layers.filter(
+        (l) =>
+          l.type === "PHOTO" || l.media.some((m: Media) => m.type === "IMAGE"),
+      ).length,
+      videoCount: layers.filter(
+        (l) =>
+          l.type === "VIDEO" || l.media.some((m: Media) => m.type === "VIDEO"),
+      ).length,
       aiNarration: null,
     };
   }

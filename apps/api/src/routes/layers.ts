@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import { LayerService } from "../services/layer.service.js";
 import { authenticate } from "../middleware/authenticate.js";
@@ -32,7 +32,12 @@ const createLayerSchema = z.object({
   year: z.number().int().min(0).max(new Date().getFullYear()).optional(),
   isPublic: z.boolean().default(true),
   tags: z.array(z.string().max(30)).max(10).default([]),
-  mediaIds: z.array(z.string().cuid()).max(5).default([]),
+  media: z.array(z.object({
+    url: z.string().min(1),
+    type: z.enum(["IMAGE", "VIDEO", "AUDIO", "MODEL_3D"]),
+    mimeType: z.string().min(1),
+    size: z.number().int().nonnegative(),
+  })).max(5).default([]),
 });
 
 export async function layerRoutes(app: FastifyInstance) {
@@ -60,7 +65,7 @@ export async function layerRoutes(app: FastifyInstance) {
         },
       },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: any, reply: FastifyReply) => {
       const query = nearbySchema.parse(request.query);
       const result = await layerService.getNearby(query);
       return reply.send({ success: true, data: result });
@@ -76,10 +81,7 @@ export async function layerRoutes(app: FastifyInstance) {
         summary: "Get a layer by ID",
       },
     },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { id } = request.params;
       const layer = await layerService.getById(id);
       if (!layer)
@@ -101,7 +103,7 @@ export async function layerRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: any, reply: FastifyReply) => {
       const body = createLayerSchema.parse(request.body);
       const layer = await layerService.create(request.user.id, body);
       return reply.status(201).send({ success: true, data: layer });
@@ -119,10 +121,7 @@ export async function layerRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { id } = request.params;
       const body = createLayerSchema.partial().parse(request.body);
       const layer = await layerService.update(id, request.user.id, body);
@@ -141,10 +140,7 @@ export async function layerRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { id } = request.params;
       await layerService.delete(id, request.user.id);
       return reply.send({ success: true });
@@ -162,10 +158,7 @@ export async function layerRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { id } = request.params;
       const { type } = z
         .object({
@@ -186,13 +179,7 @@ export async function layerRoutes(app: FastifyInstance) {
         summary: "Get all layers for a location",
       },
     },
-    async (
-      request: FastifyRequest<{
-        Params: { locationId: string };
-        Querystring: { year?: number; type?: string };
-      }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: any, reply: FastifyReply) => {
       const { locationId } = request.params;
       const { year, type } = request.query;
       const layers = await layerService.getByLocation(locationId, {

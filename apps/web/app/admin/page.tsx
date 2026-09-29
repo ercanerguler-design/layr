@@ -52,7 +52,7 @@ const TYPE_COLORS: Record<string, string> = {
   EVENT: "#ec4899",
 };
 
-export default function AdminPage() {
+export default function AdminPage(): JSX.Element {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,12 @@ export default function AdminPage() {
     );
   }
 
-  if (!stats) return null;
+  if (!stats)
+    return (
+      <div className="min-h-screen bg-[#0a0a14] flex items-center justify-center text-white">
+        Veriler yükleniyor...
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-[#0a0a14] text-white">

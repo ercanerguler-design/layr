@@ -12,11 +12,12 @@ import {
   Navigation,
   Camera,
   AlertCircle,
-  Plus,
   PenLine,
 } from "lucide-react";
 import type { NearbyLayer } from "@layr/types";
 import { AddLayerModal } from "@/components/AddLayerModal";
+
+const EMPTY_LAYERS: NearbyLayer[] = [];
 
 // Bearing: kuzeyden saat yönünde derece
 function getBearing(
@@ -65,7 +66,7 @@ const COLORS: Record<string, string> = {
 const DEFAULT_LAT = 41.0138;
 const DEFAULT_LNG = 28.9742;
 
-export default function MapPage() {
+export default function MapPage(): JSX.Element {
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,7 +127,7 @@ export default function MapPage() {
     refetchOnWindowFocus: false,
   });
 
-  const layers: NearbyLayer[] = data?.data?.data?.items ?? [];
+  const layers: NearbyLayer[] = data?.data?.data?.items ?? EMPTY_LAYERS;
 
   // Otomatik konum
   useEffect(() => {
@@ -181,12 +182,13 @@ export default function MapPage() {
 
   // Init Leaflet (client-only)
   useEffect(() => {
-    if (!mapRef.current || leafletRef.current) return;
+    const container = mapRef.current;
+    if (!container || leafletRef.current) return;
 
     import("leaflet").then((L) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((mapRef.current as any)._leaflet_id)
-        (mapRef.current as any)._leaflet_id = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+      if ((container as any)._leaflet_id)
+        (container as any)._leaflet_id = null; // eslint-disable-line @typescript-eslint/no-explicit-any
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -197,7 +199,7 @@ export default function MapPage() {
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
-      const map = L.map(mapRef.current!, {
+      const map = L.map(container, {
         center: [DEFAULT_LAT, DEFAULT_LNG],
         zoom: 14,
       });
@@ -227,7 +229,8 @@ export default function MapPage() {
         leafletRef.current = null;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (mapRef.current) (mapRef.current as any)._leaflet_id = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (container as any)._leaflet_id = null;
     };
   }, []);
 

@@ -55,7 +55,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   OTHER: "Diğer",
 };
 
-export default function LocationDetailPage() {
+export default function LocationDetailPage(): JSX.Element {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;

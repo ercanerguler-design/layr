@@ -10,6 +10,7 @@ function getMediaType(mimeType: string): "IMAGE" | "VIDEO" | "AUDIO" | "MODEL_3D
   if (mimeType.startsWith("image/")) return "IMAGE";
   if (mimeType.startsWith("video/")) return "VIDEO";
   if (mimeType.startsWith("audio/")) return "AUDIO";
+  if (mimeType.startsWith("model/")) return "MODEL_3D";
   return "IMAGE";
 }
 

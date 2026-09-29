@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { MediaService } from "../services/media.service.js";
 import { authenticate } from "../middleware/authenticate.js";
 
@@ -17,18 +17,30 @@ export async function mediaRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: any, reply: FastifyReply) => {
       const data = await request.file();
       if (!data) {
-        return reply.status(400).send({ success: false, error: "No file provided" });
+        return reply
+          .status(400)
+          .send({ success: false, error: "No file provided" });
       }
 
       // Validate MIME types (security)
       const allowedMimeTypes = [
-        "image/jpeg", "image/png", "image/webp", "image/gif",
-        "video/mp4", "video/webm", "video/quicktime",
-        "audio/mpeg", "audio/mp4", "audio/wav", "audio/ogg",
-        "model/gltf-binary", "model/gltf+json",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
+        "audio/mpeg",
+        "audio/mp4",
+        "audio/wav",
+        "audio/ogg",
+        "audio/webm",
+        "model/gltf-binary",
+        "model/gltf+json",
       ];
 
       if (!allowedMimeTypes.includes(data.mimetype)) {
@@ -40,11 +52,13 @@ export async function mediaRoutes(app: FastifyInstance) {
 
       const result = await mediaService.upload(data, request.user.id);
       return reply.status(201).send({ success: true, data: result });
-    }
+    },
   );
 
   // GET /api/media/presign — Get presigned URL for direct S3 upload
-  app.post(
+  app.post<{
+    Body: { filename: string; mimeType: string; size: number };
+  }>(
     "/presign",
     {
       schema: {
@@ -54,12 +68,7 @@ export async function mediaRoutes(app: FastifyInstance) {
       },
       preHandler: authenticate,
     },
-    async (
-      request: FastifyRequest<{
-        Body: { filename: string; mimeType: string; size: number };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { filename, mimeType, size } = request.body;
       const result = await mediaService.getPresignedUrl({
         filename,
@@ -68,6 +77,6 @@ export async function mediaRoutes(app: FastifyInstance) {
         userId: request.user.id,
       });
       return reply.send({ success: true, data: result });
-    }
+    },
   );
 }

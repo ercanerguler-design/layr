@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import multipart from "@fastify/multipart";
@@ -20,7 +20,7 @@ try {
 }
 
 export async function buildApp() {
-  const app = Fastify({
+  const app = fastify({
     logger: {
       level: config.nodeEnv === "production" ? "warn" : "info",
       transport:

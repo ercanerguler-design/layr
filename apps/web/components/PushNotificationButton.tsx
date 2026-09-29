@@ -13,7 +13,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-export function PushNotificationButton() {
+export function PushNotificationButton(): JSX.Element | null {
   const [status, setStatus] = useState<
     "idle" | "subscribed" | "denied" | "unsupported"
   >("idle");

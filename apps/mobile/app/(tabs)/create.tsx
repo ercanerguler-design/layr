@@ -25,7 +25,6 @@ const LAYER_TYPES = [
   { key: "HISTORICAL", label: "Tarih", icon: "time", color: "#8b5cf6" },
   { key: "REVIEW", label: "Yorum", icon: "star", color: "#10b981" },
   { key: "PHOTO", label: "Fotoğraf", icon: "image", color: "#3b82f6" },
-  { key: "AUDIO", label: "Ses", icon: "mic", color: "#f97316" },
   { key: "EVENT", label: "Etkinlik", icon: "calendar", color: "#ec4899" },
 ] as const;
 
@@ -40,11 +39,25 @@ export default function CreateScreen() {
   const [tags, setTags] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
   const selectedType = LAYER_TYPES.find((t) => t.key === type)!;
 
+  const choosePhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Izin gerekli", "Fotograf secmek icin galeri izni ver.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
+    if (!result.canceled) setPhoto(result.assets[0] ?? null);
+  };
+
   const handleSubmit = async () => {
-    if (!content.trim()) {
+    if (!content.trim() && !(type === "PHOTO" && photo)) {
       Alert.alert("İçerik gerekli", "Lütfen hikayeni veya içeriğini yaz.");
       return;
     }
@@ -73,10 +86,26 @@ export default function CreateScreen() {
 
       const locationId = locRes.data.data.id;
 
+      let media: Array<{ url: string; type: string; mimeType: string; size: number }> = [];
+      if (type === "PHOTO" && photo) {
+        const upload = await api.media.upload({
+          uri: photo.uri,
+          name: photo.fileName ?? `layr-${Date.now()}.jpg`,
+          type: photo.mimeType ?? "image/jpeg",
+        });
+        const uploaded = upload.data.data;
+        media = [{
+          url: uploaded.url,
+          type: uploaded.type,
+          mimeType: uploaded.mimeType,
+          size: uploaded.size,
+        }];
+      }
+
       await api.layers.create({
         locationId,
         title: title.trim() || undefined,
-        content: content.trim(),
+        content: content.trim() || "Fotograf paylasildi",
         type,
         year: year ? parseInt(year) : undefined,
         isPublic,
@@ -84,6 +113,7 @@ export default function CreateScreen() {
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
+        media,
       });
 
       Alert.alert("Katman bırakıldı! 🎉", "Hikayen bu noktaya eklendi.", [
@@ -134,6 +164,14 @@ export default function CreateScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Title */}
+        {type === "PHOTO" && (
+          <TouchableOpacity style={styles.photoButton} onPress={choosePhoto}>
+            <Ionicons name="image" size={18} color="#93c5fd" />
+            <Text style={styles.photoButtonText}>{photo?.fileName ?? (photo ? "Fotograf secildi" : "Galeriden fotograf sec")}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Title */}
         <Text style={styles.label}>Başlık (opsiyonel)</Text>
@@ -261,6 +299,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 20,
   },
+  photoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    marginBottom: 20,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(147,197,253,0.35)",
+    backgroundColor: "rgba(59,130,246,0.1)",
+  },
+  photoButtonText: { color: "#bfdbfe", fontSize: 14, flexShrink: 1 },
   textArea: { minHeight: 120, textAlignVertical: "top" },
   toggleRow: {
     flexDirection: "row",

@@ -40,7 +40,7 @@ const TYPE_LABELS: Record<string, string> = {
   AR_OBJECT: "AR Nesne",
 };
 
-export default function LayerDetailPage() {
+export default function LayerDetailPage(): JSX.Element {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -135,9 +135,12 @@ export default function LayerDetailPage() {
                 mimeType: string;
                 duration?: number | null;
               }) => {
-                const mediaUrl = m.url.startsWith("http")
-                  ? m.url
-                  : `http://localhost:3001${m.url}`;
+                const mediaUrl = m.url.startsWith("/")
+                  ? new URL(
+                      m.url,
+                      process.env.NEXT_PUBLIC_API_URL || window.location.origin,
+                    ).toString()
+                  : m.url;
 
                 if (m.type === "AUDIO") {
                   return (
