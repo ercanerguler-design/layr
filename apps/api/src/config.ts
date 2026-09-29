@@ -15,7 +15,7 @@ const envSchema = z.object({
         value.startsWith("postgres://"),
       {
         message:
-          "DATABASE_URL must be a SQLite file: URL or Postgres connection string.",
+          "DATABASE_URL must be a SQLite file: URL or PostgreSQL connection string.",
       },
     ),
   REDIS_URL: z.string().default("redis://localhost:6379"),
@@ -41,6 +41,11 @@ if (!parsed.success) {
 }
 
 const env = parsed.data;
+
+if (env.NODE_ENV === "production" && env.DATABASE_URL.startsWith("file:")) {
+  console.error("DATABASE_URL must use PostgreSQL in production.");
+  process.exit(1);
+}
 
 export const config = {
   nodeEnv: env.NODE_ENV,
