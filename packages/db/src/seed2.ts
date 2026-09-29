@@ -8,6 +8,10 @@ import * as bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Demo seed production ortamında çalıştırılamaz.");
+  }
+
   console.log("Seeding LAYR zengin veri...");
   const hash = await bcrypt.hash("layr1234!", 12);
 
@@ -21,7 +25,7 @@ async function main() {
       displayName: "LAYR Demo",
       passwordHash: hash,
       isVerified: true,
-      role: "ADMIN",
+      role: "USER",
       interestTags: JSON.stringify(["tarih", "mimari", "kultur"]),
     },
   });

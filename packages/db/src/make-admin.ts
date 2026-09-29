@@ -1,20 +1,25 @@
 import { PrismaClient } from "@prisma/client";
 
 async function main() {
+  const email = process.argv[2]?.trim().toLowerCase();
+  if (!email) {
+    throw new Error("Kullanım: pnpm --filter @layr/db db:make-admin <kayıtlı-e-posta>");
+  }
+
   const p = new PrismaClient();
-  const user = await p.user.update({
-    where: { email: "sce@scegrup.com" },
-    data: { role: "ADMIN" },
-    select: { email: true, username: true, displayName: true, role: true },
-  });
-  console.log(
-    "Admin yapildi:",
-    user.email,
-    "@" + user.username,
-    "| Role:",
-    user.role,
-  );
-  await p.$disconnect();
+  try {
+    const user = await p.user.update({
+      where: { email },
+      data: { role: "ADMIN" },
+      select: { email: true, username: true, displayName: true, role: true },
+    });
+    console.log(`Admin yetkisi verildi: ${user.email} (@${user.username})`);
+  } finally {
+    await p.$disconnect();
+  }
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});

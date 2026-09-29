@@ -27,9 +27,12 @@ The web and API are separate Vercel projects in this monorepo. Deploy the API as
 - Set unique random values of at least 32 characters for `JWT_SECRET` and `JWT_REFRESH_SECRET`.
 - Set `CORS_ORIGINS` to `https://layr-sceinnovation.vercel.app,https://layr-azure.vercel.app` (plus any other allowed web domains).
 - Configure OpenAI only if AI features should be enabled.
+- The `layr-api` Vercel project is connected to the public `layr-media` Blob store. Vercel supplies `BLOB_READ_WRITE_TOKEN`; do not commit its value.
 - Set the web project's `NEXT_PUBLIC_API_URL` to the API project's public HTTPS origin and redeploy the web project.
 
-The Prisma schema uses PostgreSQL for Neon. API media uploads currently write to local disk, which is temporary on Vercel Functions. Configure durable object storage before relying on uploaded images, audio, or models in production.
+The Prisma schema uses PostgreSQL for Neon. Browser media uploads go directly to Vercel Blob and are limited to 100 MB per file. Local development continues to store uploads under `uploads/`.
+
+To grant admin access, first register the intended account, then run `pnpm --filter @layr/db db:make-admin user@example.com` with `DATABASE_URL` set to Neon. The demo seed is blocked when `NODE_ENV=production` so its sample admin password cannot be installed in production.
 
 ## Local checks before deployment
 

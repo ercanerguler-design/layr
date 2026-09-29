@@ -1,4 +1,5 @@
 import axios from "axios";
+import { upload } from "@vercel/blob/client";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 let refreshPromise: Promise<string> | null = null;
@@ -8,6 +9,30 @@ export const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
   withCredentials: false,
 });
+
+export async function uploadMedia(file: File) {
+  const accessToken = localStorage.getItem("layr_access_token");
+  if (!accessToken) throw new Error("Oturumun sona ermiş, tekrar giriş yap.");
+
+  const pathname = `memories/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const blob = await upload(pathname, file, {
+    access: "public",
+    contentType: file.type,
+    handleUploadUrl: `${BASE_URL}/api/media/upload-token`,
+    headers: { Authorization: `Bearer ${accessToken}` },
+    multipart: file.size > 5 * 1024 * 1024,
+  });
+
+  const type = file.type.startsWith("image/")
+    ? "IMAGE"
+    : file.type.startsWith("video/")
+      ? "VIDEO"
+      : file.type.startsWith("audio/")
+        ? "AUDIO"
+        : "MODEL_3D";
+
+  return { url: blob.url, type, mimeType: file.type, size: file.size };
+}
 
 // Attach JWT from localStorage on every request
 apiClient.interceptors.request.use((config) => {

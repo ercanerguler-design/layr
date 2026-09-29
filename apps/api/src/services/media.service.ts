@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import type { MultipartFile } from "@fastify/multipart";
+import { put } from "@vercel/blob";
 import { uploadsDir } from "../storage.js";
 
 function getMediaType(mimeType: string): "IMAGE" | "VIDEO" | "AUDIO" | "MODEL_3D" {
@@ -25,6 +26,22 @@ export class MediaService {
       chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);
+
+    if (process.env.VERCEL) {
+      const blob = await put(`${userId}/${filename}`, buffer, {
+        access: "public",
+        contentType: file.mimetype,
+        addRandomSuffix: true,
+      });
+      return {
+        key: blob.pathname,
+        url: blob.url,
+        mimeType: file.mimetype,
+        size: buffer.length,
+        type: getMediaType(file.mimetype),
+      };
+    }
+
     await writeFile(filePath, buffer);
 
     const url = `/uploads/${userId}/${filename}`;

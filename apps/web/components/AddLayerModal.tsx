@@ -14,7 +14,7 @@ import {
   Play,
   Pause,
 } from "lucide-react";
-import { apiClient } from "@/lib/api";
+import { apiClient, uploadMedia } from "@/lib/api";
 import Image from "next/image";
 
 interface AddLayerModalProps {
@@ -194,13 +194,7 @@ export function AddLayerModal({
       const media: Array<{ url: string; type: string; mimeType: string; size: number }> = [];
       if (photoFile && type === "PHOTO") {
         setUploadingPhoto(true);
-        const formData = new FormData();
-        formData.append("file", photoFile);
-        const uploadRes = await apiClient.post("/api/media/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        const uploaded = uploadRes.data?.data;
-        if (uploaded?.url) media.push(uploaded);
+        media.push(await uploadMedia(photoFile));
         setUploadingPhoto(false);
       }
 
@@ -210,13 +204,7 @@ export function AddLayerModal({
         const audioFile = new File([audioBlob], "kayit.webm", {
           type: "audio/webm",
         });
-        const formData = new FormData();
-        formData.append("file", audioFile);
-        const uploadRes = await apiClient.post("/api/media/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        const uploaded = uploadRes.data?.data;
-        if (uploaded?.url) media.push(uploaded);
+        media.push(await uploadMedia(audioFile));
         setUploadingPhoto(false);
       }
 
