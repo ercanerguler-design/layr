@@ -6,13 +6,12 @@ import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import fastifyStatic from "@fastify/static";
-import { join } from "path";
 import { mkdirSync } from "fs";
 import { config } from "./config.js";
 import { registerRoutes } from "./routes/index.js";
+import { uploadsDir } from "./storage.js";
 
-// Uploads klasoru olustur
-const uploadsDir = join(process.cwd(), "uploads");
+// Vercel's function filesystem is read-only outside of the temporary directory.
 try {
   mkdirSync(uploadsDir, { recursive: true });
 } catch {

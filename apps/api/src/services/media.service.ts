@@ -2,9 +2,7 @@ import { randomUUID } from "crypto";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import type { MultipartFile } from "@fastify/multipart";
-
-// Serve local uploads from apps/api/uploads/
-const UPLOADS_DIR = join(process.cwd(), "uploads");
+import { uploadsDir } from "../storage.js";
 
 function getMediaType(mimeType: string): "IMAGE" | "VIDEO" | "AUDIO" | "MODEL_3D" {
   if (mimeType.startsWith("image/")) return "IMAGE";
@@ -18,7 +16,7 @@ export class MediaService {
   async upload(file: MultipartFile, userId: string) {
     const ext = file.filename.split(".").pop() ?? "bin";
     const filename = `${randomUUID()}.${ext}`;
-    const userDir = join(UPLOADS_DIR, userId);
+    const userDir = join(uploadsDir, userId);
     await mkdir(userDir, { recursive: true });
     const filePath = join(userDir, filename);
 

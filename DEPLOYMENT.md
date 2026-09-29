@@ -17,19 +17,19 @@ Vercel detects pnpm from the repository lockfile and builds the Next.js app. Add
 | `NEXT_PUBLIC_APP_URL` | The Vercel production domain, e.g. `https://layr.example.com` |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | A Mapbox public token if the selected map style requires it |
 
-The API is not deployed by this Vercel project. The API needs a persistent writable disk for its SQLite database and uploaded media; Vercel's function filesystem is temporary. Deploy `apps/api` on a service with a persistent volume, then set `NEXT_PUBLIC_API_URL` to that service's HTTPS origin. Until this is done, the web deployment can render but login, map data, and uploads will not work.
+The web and API are separate Vercel projects in this monorepo. Deploy the API as described below, then set `NEXT_PUBLIC_API_URL` on the web project to the API project's HTTPS origin. The web deployment renders without the API, but login and map data require it.
 
-## API service requirements
+## Vercel API project
 
-- Build from the repository root with `pnpm install --frozen-lockfile` and `pnpm --filter @layr/api build`.
-- Start with `pnpm --filter @layr/api start` and expose the configured `PORT` (default `3001`).
-- Set `DATABASE_URL` to a SQLite file on the persistent volume, such as `file:/data/layr.db`.
-- Persist the API working directory's `uploads/` folder, or replace local media storage with durable object storage before deploying without a persistent filesystem.
+- Create a second Vercel project connected to this repository, named `layr-api`.
+- Set Root Directory to `apps/api`, Framework Preset to Fastify, and enable access to source files outside the root (`packages/db` and `packages/types`).
+- Use the Neon pooled `DATABASE_URL` and set `NODE_ENV=production`.
 - Set unique random values of at least 32 characters for `JWT_SECRET` and `JWT_REFRESH_SECRET`.
-- Set `CORS_ORIGINS` to the exact Vercel production domain (and any preview domains that should be allowed).
-- Set `NODE_ENV=production`. Configure Redis and OpenAI only if those integrations are enabled for the deployment.
+- Set `CORS_ORIGINS` to `https://layr-sceinnovation.vercel.app,https://layr-azure.vercel.app` (plus any other allowed web domains).
+- Configure OpenAI only if AI features should be enabled.
+- Set the web project's `NEXT_PUBLIC_API_URL` to the API project's public HTTPS origin and redeploy the web project.
 
-The Prisma schema currently uses SQLite. A PostgreSQL URL in `DATABASE_URL` will not work until the Prisma datasource is migrated and the generated client and database migrations are updated.
+The Prisma schema uses PostgreSQL for Neon. API media uploads currently write to local disk, which is temporary on Vercel Functions. Configure durable object storage before relying on uploaded images, audio, or models in production.
 
 ## Local checks before deployment
 
